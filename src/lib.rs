@@ -8,6 +8,7 @@ mod proto;
 mod tx;
 mod util;
 mod consts;
+mod block;
 
 use chain::*;
 // use tx::*;
@@ -17,7 +18,6 @@ pub mod prelude {
     pub use serde_json;
     pub use blake2b_rs;
 }
-
 
 
 
@@ -76,8 +76,8 @@ impl GlimmerNode {
                 return Ok(false)
             }
 
-            // Verify the POW proofs are valid
-            if !Glimmer::verify_proof(tmp_last_block.proof, block.proof) {
+            // Verify the POW nonces are valid
+            if !Glimmer::verify_nonce(tmp_last_block.nonce, block.nonce) {
                 return Ok(false)
             }
 

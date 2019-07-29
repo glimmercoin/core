@@ -6,40 +6,9 @@ use blake2b_rs::blake2b;
 use crate::util::*;
 use crate::consts::*;
 use crate::tx::*;
+use crate::block::*;
 
 pub type Blockchain = Vec<Block>;
-
-/// Block in the Glimmer blockchain
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Block {
-    pub index: usize,
-    timestamp: u128,
-    pub txs: Vec<Tx>,
-    pub proof: u64,
-    pub prev_hash: Vec<u8>
-}
-
-impl Block {
-    /// Creates a new block
-    pub fn new(index: usize, txs: Vec<Tx>, proof: u64, prev_hash: Vec<u8>) -> Result<Self, Box<dyn Error>> {
-        Ok(Block {
-            index,
-            timestamp: time()?,
-            txs,
-            proof,
-            prev_hash
-        })
-    }
-
-    pub fn hash(&self) -> Result<Vec<u8>, Box<dyn Error>> {
-        let data = serde_json::to_string(&self)?;
-        let mut dst = [0; HASH_LEN];
-
-        blake2b(KEY, data.as_bytes(), &mut dst);
-
-        Ok(dst.to_vec())
-    }
-}
 
 /// Glimmer blockchain
 /// This contains the blockchain logic 
@@ -51,31 +20,23 @@ pub struct Glimmer {
 impl Glimmer {
     /// Create a new instance of the Glimmer blockchain
     pub fn new() -> Result<Self, Box<dyn Error>> {
-        let mut genesis = Glimmer {
-            chain: Vec::new(),
+        Ok(Glimmer {
+            chain: vec![Block::genesis()],
             current_txs: Vec::new()
-        };
-
-        // Add genesis block
-        genesis.add_block(100, Some([0; HASH_LEN].to_vec()))?;
-
-        Ok(genesis)
+        })
     }
 
     /// Add a block to the blockchain 
-    pub fn add_block(&mut self, proof: u64, prev_hash: Option<Vec<u8>>) -> Result<Option<&Block>, Box<dyn Error>>{
+    pub fn add_block(&mut self, nonce: u64, prev_hash: Option<Vec<u8>>) -> Result<Option<&Block>, Box<dyn Error>>{
         // Get the hash of the last block
         let hash = match prev_hash {
             Some(hash) => hash,
             None => self.chain.last().unwrap().hash()?
         };
 
-        let block = Block::new(
-            self.chain.len() + 1,
-            self.current_txs.clone(),
-            proof,
-            hash 
-        )?;
+        let mut block = Block::new(nonce, hash)?;
+
+        block.append_tx(&mut self.current_txs);
 
         self.current_txs = Vec::new();
 
@@ -87,10 +48,7 @@ impl Glimmer {
 
     pub fn add_tx(&mut self, tx: Tx) -> usize {
         self.current_txs.push(tx);
-        match self.last_block() {
-            Some(block) => block.index + 1,
-            None => 0
-        }
+        self.chain.len() + 1
     }
 
     /// Returns the last block of the chain
@@ -101,20 +59,22 @@ impl Glimmer {
 
     /// Basic POW algo
     /// TODO: Make this more optimized
-    pub fn pow(last_proof: u64) -> u64 {
-        let mut proof = 0;
+    pub fn pow(last_nonce: u64) -> Option<u64> {
 
-        while !Glimmer::verify_proof(last_proof, proof) {
-            proof += 1;
+        for nonce in 0..MAX_NONCE {
+            if Glimmer::verify_nonce(last_nonce, nonce) {
+                return Some(nonce);
+            }
         }
 
-        proof
+        None
+
     }
 
 
-    /// Verify if a proof is valid
-    pub fn verify_proof(last_proof: u64, proof: u64) -> bool {
-        let guess = serde_json::to_string(&(format!("{}{}", last_proof, proof))).unwrap();
+    /// Verify if a nonce is valid
+    pub fn verify_nonce(last_nonce: u64, nonce: u64) -> bool {
+        let guess = serde_json::to_string(&(format!("{}{}", last_nonce, nonce))).unwrap();
         let mut dst = [0; HASH_LEN];
 
         blake2b(KEY, guess.as_bytes(), &mut dst);
@@ -132,11 +92,12 @@ impl Glimmer {
         let last_block= self.last_block().unwrap();
         let prev_hash = last_block.hash().unwrap();
 
-        let proof = Glimmer::pow(last_block.proof);
+        // TODO: Make sure we can fail mining
+        let nonce = Glimmer::pow(last_block.nonce).unwrap();
 
         self.add_tx(Tx::new(String::from("0"), wallet.to_string(), 1.0));
 
-        let block = self.add_block(proof, Some(prev_hash)).unwrap().unwrap();
+        let block = self.add_block(nonce, Some(prev_hash)).unwrap().unwrap();
         &block
 
     }
