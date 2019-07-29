@@ -5,9 +5,9 @@
 
 /// Number of leading zeros required for a proof to be valid
 pub const POW_DIFFICULTLY: usize = 4;
-pub const POW_GOAL: &str = "0000";
-pub const HASH_LEN: usize = 64;
-pub const KEY: &[u8] = [0, 1, 0];
+pub const POW_GOAL: &[u8]= &[0; POW_DIFFICULTLY];
+pub const HASH_LEN: usize = 256;
+pub const KEY: &[u8] = &[0, 1, 0];
 
 /*
  * API Settings

@@ -1,7 +1,6 @@
 // External Dependencies
 use std::error::Error;
 use serde::{Serialize, Deserialize};
-use crypto_hash::{Algorithm, hex_digest};
 use blake2b_rs::blake2b;
 
 use crate::util::*;
@@ -58,7 +57,7 @@ impl Glimmer {
         };
 
         // Add genesis block
-        genesis.add_block(100, Some([0; 64].to_vec()))?;
+        genesis.add_block(100, Some([0; HASH_LEN].to_vec()))?;
 
         Ok(genesis)
     }
@@ -116,11 +115,14 @@ impl Glimmer {
     /// Verify if a proof is valid
     pub fn verify_proof(last_proof: u64, proof: u64) -> bool {
         let guess = serde_json::to_string(&(format!("{}{}", last_proof, proof))).unwrap();
-        let digest = hex_digest(Algorithm::SHA256, guess.as_bytes());
-        let guess_sub = &digest[0..POW_DIFFICULTLY];
+        let mut dst = [0; HASH_LEN];
+
+        blake2b(KEY, guess.as_bytes(), &mut dst);
+
+        let guess_sub = &dst[0..POW_DIFFICULTLY];
         let valid = guess_sub == POW_GOAL;
         if DEBUG {
-            println!("Valid: {}, {} == {}...", valid, digest, repeat_char('0', POW_DIFFICULTLY));
+            println!("Valid: {}, {:?} == {}...", valid, dst.to_vec(), repeat_char('0', POW_DIFFICULTLY));
         }
         valid
     }

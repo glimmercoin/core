@@ -15,7 +15,6 @@ use chain::*;
 pub mod prelude {
     pub use serde;
     pub use serde_json;
-    pub use crypto_hash;
     pub use blake2b_rs;
 }
 
