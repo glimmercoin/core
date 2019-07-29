@@ -6,6 +6,8 @@
 /// Number of leading zeros required for a proof to be valid
 pub const POW_DIFFICULTLY: usize = 4;
 pub const POW_GOAL: &str = "0000";
+pub const HASH_LEN: usize = 64;
+pub const KEY: &[u8] = [0, 1, 0];
 
 /*
  * API Settings
@@ -15,6 +17,7 @@ pub const POW_GOAL: &str = "0000";
 pub const API_PORT: u16 = 5000;
 /// ADDR to listen on for HTTP API
 pub const API_ADDR: &str = "0.0.0.0";
+
 
 /*
  * Glimmer Settings

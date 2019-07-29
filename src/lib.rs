@@ -10,13 +10,13 @@ mod util;
 mod consts;
 
 use chain::*;
-use crate::consts::*;
 // use tx::*;
 
 pub mod prelude {
     pub use serde;
     pub use serde_json;
     pub use crypto_hash;
+    pub use blake2b_rs;
 }
 
 

@@ -2,6 +2,7 @@
 use std::error::Error;
 use serde::{Serialize, Deserialize};
 use crypto_hash::{Algorithm, hex_digest};
+use blake2b_rs::blake2b;
 
 use crate::util::*;
 use crate::consts::*;
@@ -16,12 +17,12 @@ pub struct Block {
     timestamp: u128,
     pub txs: Vec<Tx>,
     pub proof: u64,
-    pub prev_hash: String
+    pub prev_hash: Vec<u8>
 }
 
 impl Block {
     /// Creates a new block
-    pub fn new(index: usize, txs: Vec<Tx>, proof: u64, prev_hash: String) -> Result<Self, Box<dyn Error>> {
+    pub fn new(index: usize, txs: Vec<Tx>, proof: u64, prev_hash: Vec<u8>) -> Result<Self, Box<dyn Error>> {
         Ok(Block {
             index,
             timestamp: time()?,
@@ -31,10 +32,13 @@ impl Block {
         })
     }
 
-    pub fn hash(&self) -> Result<String, Box<dyn Error>> {
-        let j = serde_json::to_string(&self)?;
-        let digest = hex_digest(Algorithm::SHA256, j.as_bytes());
-        Ok(digest)
+    pub fn hash(&self) -> Result<Vec<u8>, Box<dyn Error>> {
+        let data = serde_json::to_string(&self)?;
+        let mut dst = [0; HASH_LEN];
+
+        blake2b(KEY, data.as_bytes(), &mut dst);
+
+        Ok(dst.to_vec())
     }
 }
 
@@ -54,13 +58,13 @@ impl Glimmer {
         };
 
         // Add genesis block
-        genesis.add_block(100, Some("1".to_string()))?;
+        genesis.add_block(100, Some([0; 64].to_vec()))?;
 
         Ok(genesis)
     }
 
     /// Add a block to the blockchain 
-    pub fn add_block(&mut self, proof: u64, prev_hash: Option<String>) -> Result<Option<&Block>, Box<dyn Error>>{
+    pub fn add_block(&mut self, proof: u64, prev_hash: Option<Vec<u8>>) -> Result<Option<&Block>, Box<dyn Error>>{
         // Get the hash of the last block
         let hash = match prev_hash {
             Some(hash) => hash,
