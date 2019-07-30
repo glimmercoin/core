@@ -1,12 +1,9 @@
 // External Dependencies
 use std::error::Error;
-use serde::{Serialize, Deserialize};
-use blake2b_rs::blake2b;
 use num_bigint::BigUint;
 use num_traits::identities::One;
 
 use crate::error::MiningError;
-use crate::util::*;
 use crate::consts::*;
 use crate::tx::*;
 use crate::block::*;
@@ -33,6 +30,8 @@ impl Glimmer {
     pub fn add_block(&mut self) -> Result<(), MiningError>{
         let block: Block;
         {
+            // let txs = if self.current_txs.
+            
             match self.chain.last() {
                 Some(prev) => {
                     block = Block::new(self.current_txs.clone(), prev.hash())?;
@@ -65,7 +64,6 @@ impl Glimmer {
 
     /// Verify if a nonce is valid
     pub fn verify_block(block: &Block, nonce: u64) -> bool {
-        // let guess = serde_json::to_string(&(format!("{}{}", last_nonce, nonce))).unwrap();
       let target = BigUint::one() << (HASH_BITS - POW_DIFFICULTLY);
 
       let hash = Block::calculate_hash(&block, nonce);

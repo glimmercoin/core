@@ -1,7 +1,6 @@
 //! Glimmer Blockchain Transactions
-use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone)]
 /// Transaction on the Glimemr Blockchain
 pub struct Tx {
     pub sender: String,

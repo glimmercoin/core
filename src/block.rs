@@ -1,6 +1,4 @@
-use std::error::Error;
 use crate::util::*;
-use serde::{Serialize, Deserialize};
 use blake2b_rs::blake2b;
 use num_bigint::BigUint;
 use num_traits::identities::One;
@@ -12,7 +10,7 @@ use crate::util::convert_u64_to_u8_array;
 
 pub type Blake2bHash = [u8; HASH_LEN];
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone)]
 /// Block in the Glimmer blockchain
 pub struct Block {
     /// Timestamp of the block creation

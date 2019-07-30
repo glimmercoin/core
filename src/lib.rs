@@ -89,23 +89,11 @@ impl GlimmerNode {
 
     }
 
-    /// Find longest chain from all nodes
-    pub fn resolve_conflicts(&mut self) -> Result<bool, Box<dyn Error>> {
-        // let new_chain: Option<Blockchain> = None;
-        // let min_len = self.chain().len();
+    // /// Find longest chain from all nodes
+    // pub fn resolve_conflicts(&mut self) -> Result<bool, Box<dyn Error>> {
+    //     // let new_chain: Option<Blockchain> = None;
+    //     // let min_len = self.chain().len();
 
-        Ok(false)
-    } 
-}
-
-
-
-
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
+    //     Ok(false)
+    // } 
 }
