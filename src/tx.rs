@@ -2,17 +2,19 @@
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+/// Transaction on the Glimemr Blockchain
 pub struct Tx {
-    sender: String,
-    recipient: String,
-    amount: f64
+    pub sender: String,
+    pub recipient: String,
+    pub amount: f64
 }
 
 impl Tx {
-    pub fn new(sender: String, recipient: String, amount: f64) -> Self {
+    /// Create a new transaction
+    pub fn new(sender: &str, recipient: &str, amount: f64) -> Self {
         Tx {
-            sender,
-            recipient,
+            sender: sender.to_string(),
+            recipient: recipient.to_string(),
             amount
         }
     }

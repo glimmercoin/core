@@ -9,8 +9,15 @@ pub const POW_GOAL: &[u8]= &[0; POW_DIFFICULTLY];
 
 pub const MAX_NONCE: u64 = 1_000_000;
 
-pub const HASH_LEN: usize = 256;
-pub const KEY: &[u8] = &[0, 0, 0];
+pub const HASH_BITS: usize = 96;
+pub const HASH_LEN: usize = HASH_BITS / 8;
+pub const KEY: &[u8] = &[0];
+
+pub const RESERVE_WALLET: &str = &"0";
+pub const GENESIS_RESERVE: f64 = 50_000_000_000.0;
+pub const REWARD: f64 = 500.0;
+
+pub const MINER_WALLET: &str = "avery";
 
 /*
  * API Settings

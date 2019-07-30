@@ -2,7 +2,10 @@
 use std::error::Error;
 use serde::{Serialize, Deserialize};
 use blake2b_rs::blake2b;
+use num_bigint::BigUint;
+use num_traits::identities::One;
 
+use crate::error::MiningError;
 use crate::util::*;
 use crate::consts::*;
 use crate::tx::*;
@@ -27,22 +30,25 @@ impl Glimmer {
     }
 
     /// Add a block to the blockchain 
-    pub fn add_block(&mut self, nonce: u64, prev_hash: Option<Vec<u8>>) -> Result<Option<&Block>, Box<dyn Error>>{
-        // Get the hash of the last block
-        let hash = match prev_hash {
-            Some(hash) => hash,
-            None => self.chain.last().unwrap().hash()?
-        };
-
-        let mut block = Block::new(nonce, hash)?;
-
-        block.append_tx(&mut self.current_txs);
-
-        self.current_txs = Vec::new();
+    pub fn add_block(&mut self) -> Result<(), MiningError>{
+        let block: Block;
+        {
+            match self.chain.last() {
+                Some(prev) => {
+                    block = Block::new(self.current_txs.clone(), prev.hash())?;
+                    self.current_txs = vec![Tx::new(RESERVE_WALLET, MINER_WALLET, REWARD)];
+                }
+                // Adding a block to an empty blockchain is an error, a genesis block needs to be
+                // created first.
+                None => {
+                    return Err(MiningError::NoParent)
+                }
+            }
+        }
 
         self.chain.push(block);
 
-        Ok(self.last_block())
+        Ok(())
     }
 
 
@@ -57,50 +63,36 @@ impl Glimmer {
     }
 
 
-    /// Basic POW algo
-    /// TODO: Make this more optimized
-    pub fn pow(last_nonce: u64) -> Option<u64> {
-
-        for nonce in 0..MAX_NONCE {
-            if Glimmer::verify_nonce(last_nonce, nonce) {
-                return Some(nonce);
-            }
-        }
-
-        None
-
-    }
-
-
     /// Verify if a nonce is valid
-    pub fn verify_nonce(last_nonce: u64, nonce: u64) -> bool {
-        let guess = serde_json::to_string(&(format!("{}{}", last_nonce, nonce))).unwrap();
-        let mut dst = [0; HASH_LEN];
+    pub fn verify_block(block: &Block, nonce: u64) -> bool {
+        // let guess = serde_json::to_string(&(format!("{}{}", last_nonce, nonce))).unwrap();
+      let target = BigUint::one() << (HASH_BITS - POW_DIFFICULTLY);
 
-        blake2b(KEY, guess.as_bytes(), &mut dst);
+      let hash = Block::calculate_hash(&block, nonce);
+      let hash_int = BigUint::from_bytes_be(&hash);
 
-        let guess_sub = &dst[0..POW_DIFFICULTLY];
-        let valid = guess_sub == POW_GOAL;
-        if DEBUG {
-            println!("Valid: {}, {:?} == {}...", valid, dst.to_vec(), repeat_char('0', POW_DIFFICULTLY));
-        }
-        valid
+      if hash_int < target {
+          return true;
+      }
+      else {
+          return false;
+      }
     }
 
 
-    pub fn mine(&mut self, wallet: &String) -> &Block {
-        let last_block= self.last_block().unwrap();
-        let prev_hash = last_block.hash().unwrap();
+    // pub fn mine(&mut self, wallet: &String) -> &Block {
+    //     let last_block= self.last_block().unwrap();
+    //     let prev_hash = last_block.hash();
 
-        // TODO: Make sure we can fail mining
-        let nonce = Glimmer::pow(last_block.nonce).unwrap();
+    //     // TODO: Make sure we can fail mining
+    //     let nonce = pow(last_block.nonce).unwrap();
 
-        self.add_tx(Tx::new(String::from("0"), wallet.to_string(), 1.0));
+    //     self.add_tx(Tx::new(String::from("0"), wallet.to_string(), 1.0));
 
-        let block = self.add_block(nonce, Some(prev_hash)).unwrap().unwrap();
-        &block
+    //     let block = self.add_block(nonce, Some(prev_hash)).unwrap().unwrap();
+    //     &block
 
-    }
+    // }
 
 
 }
