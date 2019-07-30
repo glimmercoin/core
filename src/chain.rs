@@ -7,6 +7,7 @@ use crate::error::MiningError;
 use crate::consts::*;
 use crate::tx::*;
 use crate::block::*;
+use crate::util::*;
 
 pub type Blockchain = Vec<Block>;
 
@@ -64,12 +65,12 @@ impl Glimmer {
 
     /// Verify if a block is valid
     pub fn verify_block(block: &Block, nonce: u64) -> bool {
-        let target = BigUint::one() << (HASH_BITS - POW_DIFFICULTLY);
+        let target = get_target();
 
-        let hash = Block::calculate_hash(&block, nonce);
+        let hash = Block::calculate_hash(&block.encode(), nonce);
         let hash_int = BigUint::from_bytes_be(&hash);
 
-        if hash_int < target {
+        if hash_int <= target {
             return true;
         }
         else {

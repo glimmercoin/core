@@ -4,29 +4,39 @@
  */
 
 /// Number of leading zeros required for a proof to be valid
-pub const POW_DIFFICULTLY: usize = 4;
-pub const POW_GOAL: &[u8]= &[0; POW_DIFFICULTLY];
+pub const POW_DIFFICULTLY: usize = 5;
 
-pub const MAX_NONCE: u64 = 1_000_000;
 
-pub const HASH_BITS: usize = 96;
+pub const MAX_NONCE: u64 = 1_000_000_000_000;
+
+/// Length (in bits) of produced hashes
+pub const HASH_BITS: usize = 256;
+/// Length (in bytes) of pruced hashes
 pub const HASH_LEN: usize = HASH_BITS / 8;
-pub const KEY: &[u8] = &[0];
+/// Key to hash with (empty)
+pub const KEY: &[u8] = &[];
 
+/// Wallet address of reserve
 pub const RESERVE_WALLET: &str = &"0";
-pub const GENESIS_RESERVE: f64 = 50_000_000_000.0;
+/// Starting number of coins in reserve
+pub const GENESIS_RESERVE: f64 = 50_000_000_000_000.0;
+
+// TODO: Make dynamic
+/// Mining REWARD
 pub const REWARD: f64 = 500.0;
 
-pub const MINER_WALLET: &str = "avery";
+// TODO: make configurable
+/// Wallet to send rewards to
+pub const MINER_WALLET: &str = "miner";
 
 /*
  * API Settings
  */
 
-/// PORT to listen on for HTTP API
-pub const API_PORT: u16 = 5000;
-/// ADDR to listen on for HTTP API
-pub const API_ADDR: &str = "0.0.0.0";
+// /// PORT to listen on for HTTP API
+// pub const API_PORT: u16 = 5000;
+// /// ADDR to listen on for HTTP API
+// pub const API_ADDR: &str = "0.0.0.0";
 
 
 /*

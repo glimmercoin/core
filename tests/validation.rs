@@ -4,8 +4,7 @@ use glimmer_core::consts::*;
 use glimmer_core::block::*;
 
 #[test]
-fn validate_changed_chain() {
-
+fn invalidate_chain() {
     
     let mut node = GlimmerNode::new().unwrap();
 
@@ -29,13 +28,11 @@ fn validate_changed_chain() {
 
     chain.chain.get_mut(0).unwrap().txs.get_mut(0).unwrap().amount = 1.0;
 
-    assert_eq!(false, GlimmerNode::verify_chain(chain));
-
-
+    assert!(!GlimmerNode::verify_chain(chain));
 }
 
 #[test]
-fn balance() {
+fn validate_tx() {
     let mut node = GlimmerNode::new().unwrap();
 
     let chain = &mut node.chain;
@@ -52,28 +49,3 @@ fn balance() {
 
 }
 
-// fn print_chain(chain: Vec<Block>) {
-
-//     for block in chain {
-//         println!("Block: {}", pretty_hash(&block.hash().to_vec()));
-//         println!("Nonce: {}", block.nonce);
-//         println!("Parent: {}", pretty_hash(&block.prev_hash.to_vec()));
-//         println!("Txs: {}", block.txs.len());
-//         for tx in block.txs {
-//             println!(" Tx:");
-//             println!(" Sender: {}", tx.sender);
-//             println!(" Recipient: {}", tx.recipient);
-//             println!(" Amount: {}", tx.amount);
-//             println!("");
-//         }
-//         println!("");
-//     }
-// }
-
-// fn pretty_hash(hash: &Vec<u8>) -> String {
-//     let mut string = String::with_capacity(2*hash.len());
-//     for n in hash {
-//         string.push_str(&format!("{:x}", n));
-//     }
-//     string
-// }

@@ -23,6 +23,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     print_chain(chain.chain.clone());
 
+    println!("Reserve Balance: {}", chain.get_bal(RESERVE_WALLET));
+    println!("Avery's Balance: {}", chain.get_bal("avery"));
+    println!("Grandma's Balance: {}", chain.get_bal("grandma"));
+
     Ok(())
 }
 

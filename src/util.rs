@@ -1,6 +1,9 @@
 //! Glimmer Blockchain utility functions
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
+use crate::consts::*;
+use num_bigint::BigUint;
+use num_traits::identities::One;
 
 /// Utility function to return the current time in millisseconds
 pub fn time() -> Result<u128, Box<dyn Error>> {
@@ -32,3 +35,14 @@ pub fn convert_u64_to_u8_array(val: u64) -> [u8; 8] {
     ]
 }
 
+pub fn pretty_hash(hash: &Vec<u8>) -> String {
+    let mut string = String::with_capacity(2*hash.len());
+    for n in hash {
+        string.push_str(&format!("{:x}", n));
+    }
+    string
+}
+
+pub fn get_target() -> BigUint {
+  BigUint::one() << (HASH_BITS - 4 * POW_DIFFICULTLY)
+}

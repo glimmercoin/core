@@ -2,12 +2,14 @@ use crate::util::*;
 use blake2b_rs::blake2b;
 use num_bigint::BigUint;
 use num_traits::identities::One;
+use rayon::prelude::*;
 
 use crate::error::MiningError;
 use crate::consts::*;
 use crate::tx::Tx;
-use crate::util::convert_u64_to_u8_array;
+use crate::util::*;
 
+/// Hash of Blake2b Algorithm
 pub type Blake2bHash = [u8; HASH_LEN];
 
 #[derive(Debug, Clone)]
@@ -41,9 +43,7 @@ impl Block {
                 block.nonce = nonce;
 
                 Ok(block)
-            })
-
-
+        })
     }
 
     /// Append the txs to a block
@@ -71,48 +71,66 @@ impl Block {
         for tx in &self.txs {
             vec.extend_from_slice(tx.sender.as_bytes());
             vec.extend_from_slice(tx.recipient.as_bytes());
-            // TODO: Make this actually work
-            vec.extend(&convert_u64_to_u8_array(tx.amount as u64));
+            vec.extend(&tx.amount.to_bits().to_be_bytes());
         };
 
         vec
 
     }
 
+    /// Returns encoded headers + body of block
+    pub fn encode(&self) -> Vec<u8> {
+       let mut headers = self.headers();
+        // Encode Body
+       headers.extend_from_slice(&self.body());
+
+       headers
+    }
 
     /// Returns a hash of the block
-    pub fn calculate_hash(block: &Block, nonce: u64) -> Blake2bHash {
-        let mut headers = block.headers();
-        headers.extend_from_slice(&block.body());
-        headers.extend_from_slice(&convert_u64_to_u8_array(nonce));
+    pub fn calculate_hash(encoded: &Vec<u8>, nonce: u64) -> Blake2bHash {
+        let mut vec = Vec::with_capacity(encoded.len() + 8);
+        // Encode random nonce
+        vec.extend_from_slice(encoded);
+        vec.extend_from_slice(&convert_u64_to_u8_array(nonce));
 
         let mut dst = [0; HASH_LEN];
 
-        blake2b(KEY, &headers, &mut dst);
+        // Hash it using blake2b
+        blake2b(KEY, &vec, &mut dst);
 
+        // Return hash
         dst
     }
 
     /// Return hash of this block
     pub fn hash(&self) -> Blake2bHash {
-        Block::calculate_hash(self, self.nonce)
+        Block::calculate_hash(&self.encode(), self.nonce)
     }
 
     pub fn try_hash(&self) -> Option<u64> {
       // The target is a number we compare the hash to. It is a 256bit binary with DIFFICULTY
       // leading zeroes.
-      let target = BigUint::one() << (HASH_BITS - POW_DIFFICULTLY);
+      let target = get_target();
 
-      for nonce in 0..MAX_NONCE {
-          let hash = Block::calculate_hash(&self, nonce);
+      let encoded = self.encode();
+
+      // Mine in parallel on CPU
+      let valid_nonce = (0..MAX_NONCE).into_par_iter().try_for_each(|nonce| {
+          let hash = Block::calculate_hash(&encoded, nonce);
           let hash_int = BigUint::from_bytes_be(&hash);
 
-          if hash_int < target {
-              return Some(nonce);
-          }
-      }
 
-      None
+          if hash_int <= target {
+              return Err(nonce)
+          }
+          Ok(())
+
+      });
+
+      Some(valid_nonce.unwrap_err())
+    
+      // None
   }
 
 

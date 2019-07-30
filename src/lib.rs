@@ -88,7 +88,6 @@ impl GlimmerNode {
                 };
             }
 
-            // TODO: Verify individual txs
             tmp_last_block = block;
             cur_idx += 1
         }

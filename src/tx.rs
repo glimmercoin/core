@@ -1,10 +1,13 @@
 //! Glimmer Blockchain Transactions
 
-#[derive(Debug, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 /// Transaction on the Glimemr Blockchain
 pub struct Tx {
+    /// Sender Address
     pub sender: String,
+    /// Recipient Address
     pub recipient: String,
+    /// Amount to send the recipient
     pub amount: f64
 }
 
