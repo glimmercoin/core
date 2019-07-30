@@ -61,7 +61,8 @@ impl GlimmerNode {
     }
 
     /// Verify if a glimmer blockchain is valid
-    pub fn verify_chain(chain: Blockchain) -> bool {
+    pub fn verify_chain(glim: &Glimmer) -> bool {
+        let chain = &glim.chain;
         let mut tmp_last_block = chain.get(0).unwrap();
         let mut cur_idx = 1; 
 
@@ -78,6 +79,13 @@ impl GlimmerNode {
             // Verify the POW nonces are valid
             if !Glimmer::verify_block(block, block.nonce) {
                 return false;
+            }
+
+            // Verify txs
+            for tx in &block.txs {
+                if !glim.verify_tx(tx) {
+                    return false
+                };
             }
 
             // TODO: Verify individual txs

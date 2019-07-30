@@ -120,7 +120,7 @@ impl Block {
     pub fn genesis() -> Self {
         Block {
             timestamp: time().unwrap(),
-            txs: vec![Tx::new(RESERVE_WALLET, RESERVE_WALLET, GENESIS_RESERVE)],
+            txs: vec![Tx::new("-1", RESERVE_WALLET, GENESIS_RESERVE)],
             nonce: 100,
             prev_hash: [0; HASH_LEN]
         }

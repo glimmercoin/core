@@ -31,7 +31,7 @@ impl Glimmer {
         let block: Block;
         {
             // let txs = if self.current_txs.
-            
+
             match self.chain.last() {
                 Some(prev) => {
                     block = Block::new(self.current_txs.clone(), prev.hash())?;
@@ -62,21 +62,52 @@ impl Glimmer {
     }
 
 
-    /// Verify if a nonce is valid
+    /// Verify if a block is valid
     pub fn verify_block(block: &Block, nonce: u64) -> bool {
-      let target = BigUint::one() << (HASH_BITS - POW_DIFFICULTLY);
+        let target = BigUint::one() << (HASH_BITS - POW_DIFFICULTLY);
 
-      let hash = Block::calculate_hash(&block, nonce);
-      let hash_int = BigUint::from_bytes_be(&hash);
+        let hash = Block::calculate_hash(&block, nonce);
+        let hash_int = BigUint::from_bytes_be(&hash);
 
-      if hash_int < target {
-          return true;
-      }
-      else {
-          return false;
-      }
+        if hash_int < target {
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 
+    /// Returns the balance of a provide address
+    pub fn get_bal(&self, addr: &str) -> f64 {
+        // Sender balance
+        let mut balance: f64 = 0.0;
+
+        // Find balance of tx
+        for block in &self.chain {
+            for tx in &block.txs {
+                // Withdrawls
+                if tx.sender == addr {
+                    balance -= tx.amount;
+                }
+
+                // Deposits
+                if tx.recipient == addr {
+                    balance += tx.amount;
+                }
+            }
+        }
+        balance
+    }
+
+    /// Verify whether a sender has enough to create a tx
+    pub fn verify_tx(&self, new_tx: &Tx) -> bool {
+        let balance = self.get_bal(&new_tx.sender);
+
+        if new_tx.amount > balance {
+            return false;
+        }
+        true
+    }
 
     // pub fn mine(&mut self, wallet: &String) -> &Block {
     //     let last_block= self.last_block().unwrap();
