@@ -136,11 +136,12 @@ impl Block {
 
     /// Return the genesis block
     pub fn genesis() -> Self {
-        Block {
-            timestamp: time().unwrap(),
-            txs: vec![Tx::new("-1", RESERVE_WALLET, GENESIS_RESERVE)],
-            nonce: 100,
-            prev_hash: [0; HASH_LEN]
-        }
+        Block::new(vec![Tx::new("-1", RESERVE_WALLET, GENESIS_RESERVE)], [0; HASH_LEN]).unwrap()
+        // Block {
+        //     timestamp: time().unwrap(),
+        //     txs: , RESERVE_WALLET, GENESIS_RESERVE)],
+        //     nonce: 100,
+        //     prev_hash: [0; HASH_LEN]
+        // }
     }
 }

@@ -9,23 +9,23 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let chain = &mut node.chain;
 
-    chain.add_tx(Tx::new(RESERVE_WALLET, "grandma", 65.0));
+    chain.add_tx(Tx::new(RESERVE_WALLET, "bjldsfkljlkj8u8h", 65.0));
 
     chain.add_block();
 
-    chain.add_tx(Tx::new(RESERVE_WALLET, "grandma", 65.0));
+    chain.add_tx(Tx::new(RESERVE_WALLET, "bjldsfkljlkj8u8h", 65.0));
 
     chain.add_block();
 
-    chain.add_tx(Tx::new(RESERVE_WALLET, "grandma", 65.0));
+    chain.add_tx(Tx::new(RESERVE_WALLET, "bjldsfkljlkj8u8h", 65.0));
 
     chain.add_block();
 
     print_chain(chain.chain.clone());
 
     println!("Reserve Balance: {}", chain.get_bal(RESERVE_WALLET));
-    println!("Avery's Balance: {}", chain.get_bal("avery"));
-    println!("Grandma's Balance: {}", chain.get_bal("grandma"));
+    println!("Miner's Balance: {}", chain.get_bal("miner"));
+    println!("bjldsfkljlkj8u8h's Balance: {}", chain.get_bal("bjldsfkljlkj8u8h"));
 
     Ok(())
 }

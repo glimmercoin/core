@@ -4,10 +4,10 @@
  */
 
 /// Number of leading zeros required for a proof to be valid
-pub const POW_DIFFICULTLY: usize = 5;
+pub const POW_DIFFICULTLY: usize = 4;
 
 
-pub const MAX_NONCE: u64 = 1_000_000_000_000;
+pub const MAX_NONCE: u64 = std::u64::MAX;
 
 /// Length (in bits) of produced hashes
 pub const HASH_BITS: usize = 256;
