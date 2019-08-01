@@ -44,5 +44,5 @@ pub fn pretty_hash(hash: &Vec<u8>) -> String {
 }
 
 pub fn get_target() -> BigUint {
-  BigUint::one() << (HASH_BITS - 4 * POW_DIFFICULTLY)
+  BigUint::one() << (HASH_BITS - POW_DIFFICULTLY)
 }

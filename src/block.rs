@@ -27,12 +27,32 @@ pub struct Block {
 }
 
 impl Block {
-    /// Creates a new block
-    pub fn new(txs: Vec<Tx>, prev_hash: Blake2bHash) -> Result<Self, MiningError>{
+    /// Creates a new block, mutates current_txs
+    pub fn new(txs: &mut Vec<Tx>, prev_hash: Blake2bHash) -> Result<Self, MiningError>{
+        let mut block_tx = Vec::with_capacity(txs.len() + 1);
+        let mut reward_fees = 0.0;
+
+        txs.sort_by(|a, b | { b.mining_fee.partial_cmp(&a.mining_fee).unwrap() });
+
+        let mut cur_idx = 0;
+        while cur_idx < txs.len(){
+            println!("Len: {}", txs.len());
+            // TODO: Check block will be less than 1 MB or set size
+            let tx = txs.remove(cur_idx);
+
+            reward_fees += tx.mining_fee;
+
+            // Push TX to block_tx and remove
+            block_tx.push(tx);
+            cur_idx += 1;
+        }
+
+        block_tx.push(Tx::new("", MINER_WALLET, REWARD + reward_fees, 0.0));
+
         // Create block
         let mut block = Block {
             timestamp: time().unwrap(),
-            txs,
+            txs: block_tx,
             nonce: 0,
             prev_hash
         };
@@ -136,7 +156,7 @@ impl Block {
 
     /// Return the genesis block
     pub fn genesis() -> Self {
-        Block::new(vec![Tx::new("-1", RESERVE_WALLET, GENESIS_RESERVE)], [0; HASH_LEN]).unwrap()
+        Block::new(&mut vec![Tx::new("", RESERVE_WALLET, GENESIS_RESERVE, 0.0)], [0; HASH_LEN]).unwrap()
         // Block {
         //     timestamp: time().unwrap(),
         //     txs: , RESERVE_WALLET, GENESIS_RESERVE)],

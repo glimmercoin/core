@@ -4,22 +4,41 @@ use glimmer_core::consts::*;
 use glimmer_core::block::*;
 
 fn main() -> Result<(), Box<dyn Error>> {
+
+    println!("Mining genesis block");
     
     let mut node = GlimmerNode::new()?;
 
+    println!("Mined");
+
     let chain = &mut node.chain;
 
-    chain.add_tx(Tx::new(RESERVE_WALLET, "bjldsfkljlkj8u8h", 65.0));
+    chain.add_tx(Tx::new(RESERVE_WALLET, "bjldsfkljlkj8u8h", 65.0, 0.15 * 65.0));
+    chain.add_tx(Tx::new(RESERVE_WALLET, "hi", 65.0, 0.25 * 65.0));
+    chain.add_tx(Tx::new(RESERVE_WALLET, "hfksdlj", 65.0, 0.35 * 65.0));
+    chain.add_tx(Tx::new(RESERVE_WALLET, "jfkdslfjk", 65.0, 0.15 * 65.0));
+
+    println!("Mining block");
 
     chain.add_block();
 
-    chain.add_tx(Tx::new(RESERVE_WALLET, "bjldsfkljlkj8u8h", 65.0));
+    println!("Mined");
+
+    chain.add_tx(Tx::new(RESERVE_WALLET, "bjldsfkljlkj8u8h", 65.0, 0.15 * 65.0));
+
+    println!("Mining block");
 
     chain.add_block();
 
-    chain.add_tx(Tx::new(RESERVE_WALLET, "bjldsfkljlkj8u8h", 65.0));
+    println!("Mined");
+
+    chain.add_tx(Tx::new(RESERVE_WALLET, "bjldsfkljlkj8u8h", 65.0, 0.15 * 65.0));
+
+    println!("Mining block");
 
     chain.add_block();
+
+    println!("Mined");
 
     print_chain(chain.chain.clone());
 
@@ -42,6 +61,7 @@ fn print_chain(chain: Vec<Block>) {
             println!(" Sender: {}", tx.sender);
             println!(" Recipient: {}", tx.recipient);
             println!(" Amount: {}", tx.amount);
+            println!(" Mining Fee: {}", tx.mining_fee);
             println!("");
         }
         println!("");

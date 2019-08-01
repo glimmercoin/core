@@ -3,8 +3,8 @@
  * Proof of Work
  */
 
-/// Number of leading zeros required for a proof to be valid
-pub const POW_DIFFICULTLY: usize = 4;
+/// Difficultly level
+pub const POW_DIFFICULTLY: usize = 1;
 
 
 pub const MAX_NONCE: u64 = std::u64::MAX;

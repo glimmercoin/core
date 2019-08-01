@@ -60,41 +60,6 @@ impl GlimmerNode {
         }
     }
 
-    /// Verify if a glimmer blockchain is valid
-    pub fn verify_chain(glim: &Glimmer) -> bool {
-        let chain = &glim.chain;
-        let mut tmp_last_block = chain.get(0).unwrap();
-        let mut cur_idx = 1; 
-
-        // Iterate over all blocks in the chain
-        while cur_idx < chain.len() {
-            let block = &chain[cur_idx];
-
-            // Verify that the prev_hash of the current 
-            // block equals the hash of the last block
-            if block.prev_hash != tmp_last_block.hash() {
-                return false;
-            }
-
-            // Verify the POW nonces are valid
-            if !Glimmer::verify_block(block, block.nonce) {
-                return false;
-            }
-
-            // Verify txs
-            for tx in &block.txs {
-                if !glim.verify_tx(tx) {
-                    return false
-                };
-            }
-
-            tmp_last_block = block;
-            cur_idx += 1
-        }
-
-        true
-
-    }
 
     // /// Find longest chain from all nodes
     // pub fn resolve_conflicts(&mut self) -> Result<bool, Box<dyn Error>> {

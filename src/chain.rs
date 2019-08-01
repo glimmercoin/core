@@ -18,6 +18,24 @@ pub struct Glimmer {
     current_txs: Vec<Tx>
 }
 
+impl std::fmt::Display for Glimmer {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        for block in &self.chain {
+            writeln!(f,"Block: {}", pretty_hash(&block.hash().to_vec()));
+            writeln!(f,"Nonce: {}", block.nonce);
+            writeln!(f,"Parent: {}", pretty_hash(&block.prev_hash.to_vec()));
+            writeln!(f,"Txs: {}", block.txs.len());
+            for tx in &block.txs {
+                writeln!(f, "{}", tx);
+            }
+            write!(f,"");
+        }
+        write!(f,"")
+    }
+
+}
+
+
 impl Glimmer {
     /// Create a new instance of the Glimmer blockchain
     pub fn new() -> Result<Self, Box<dyn Error>> {
@@ -35,8 +53,8 @@ impl Glimmer {
 
             match self.chain.last() {
                 Some(prev) => {
-                    block = Block::new(self.current_txs.clone(), prev.hash())?;
-                    self.current_txs = vec![Tx::new(RESERVE_WALLET, MINER_WALLET, REWARD)];
+                    block = Block::new(&mut self.current_txs, prev.hash())?;
+                    // self.current_txs = vec![Tx::new(RESERVE_WALLET, MINER_WALLET, REWARD,0.0)];
                 }
                 // Adding a block to an empty blockchain is an error, a genesis block needs to be
                 // created first.
@@ -78,6 +96,43 @@ impl Glimmer {
         }
     }
 
+    /// Verify if a glimmer blockchain is valid
+    pub fn verify_chain(glim: &Glimmer) -> bool {
+        let chain = &glim.chain;
+        let mut tmp_last_block = chain.get(0).unwrap();
+        let mut cur_idx = 1; 
+
+        // Iterate over all blocks in the chain
+        while cur_idx < chain.len() {
+            let block = &chain[cur_idx];
+
+            // Verify that the prev_hash of the current 
+            // block equals the hash of the last block
+            if block.prev_hash != tmp_last_block.hash() {
+                return false;
+            }
+            
+            // Verify txs
+            for tx in &block.txs {
+                if !glim.verify_tx(tx) {
+                    return false
+                };
+            }
+
+            // Verify the POW nonces are valid
+            if !Glimmer::verify_block(block, block.nonce) {
+                return false;
+            }
+
+
+            tmp_last_block = block;
+            cur_idx += 1
+        }
+
+        true
+
+    }
+
     /// Returns the balance of a provide address
     pub fn get_bal(&self, addr: &str) -> f64 {
         // Sender balance
@@ -86,8 +141,11 @@ impl Glimmer {
         // Find balance of tx
         for block in &self.chain {
             for tx in &block.txs {
+                if tx.sender == "" && tx.recipient != "" {
+                    balance += tx.amount;
+                }
                 // Withdrawls
-                if tx.sender == addr {
+                else if tx.sender == addr {
                     balance -= tx.amount;
                 }
 
@@ -104,7 +162,7 @@ impl Glimmer {
     pub fn verify_tx(&self, new_tx: &Tx) -> bool {
         let balance = self.get_bal(&new_tx.sender);
 
-        if new_tx.amount > balance {
+        if new_tx.cost() > balance {
             return false;
         }
         true
