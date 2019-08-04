@@ -47,7 +47,7 @@ impl Block {
             cur_idx += 1;
         }
 
-        block_tx.push(Tx::new("", MINER_WALLET, REWARD + reward_fees, 0.0));
+        block_tx.insert(0, Tx::new("", MINER_WALLET, REWARD + reward_fees, 0.0));
 
         // Create block
         let mut block = Block {

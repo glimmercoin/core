@@ -19,18 +19,19 @@ pub struct Glimmer {
 }
 
 impl std::fmt::Display for Glimmer {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         for block in &self.chain {
-            writeln!(f,"Block: {}", pretty_hash(&block.hash().to_vec()));
-            writeln!(f,"Nonce: {}", block.nonce);
-            writeln!(f,"Parent: {}", pretty_hash(&block.prev_hash.to_vec()));
-            writeln!(f,"Txs: {}", block.txs.len());
+            writeln!(f,"Block: {}", pretty_hash(&block.hash().to_vec()))?;
+            writeln!(f,"Nonce: {}", block.nonce)?;
+            writeln!(f,"Parent: {}", pretty_hash(&block.prev_hash.to_vec()))?;
+            writeln!(f,"Txs: {}", block.txs.len())?;
             for tx in &block.txs {
-                writeln!(f, "{}", tx);
+                writeln!(f, "{}", tx)?;
             }
-            write!(f,"");
+            write!(f,"")?;
         }
-        write!(f,"")
+
+        Ok(())
     }
 
 }
@@ -88,7 +89,7 @@ impl Glimmer {
         let hash = Block::calculate_hash(&block.encode(), nonce);
         let hash_int = BigUint::from_bytes_be(&hash);
 
-        if hash_int <= target {
+        if hash_int <= target && {
             return true;
         }
         else {
@@ -141,11 +142,8 @@ impl Glimmer {
         // Find balance of tx
         for block in &self.chain {
             for tx in &block.txs {
-                if tx.sender == "" && tx.recipient != "" {
-                    balance += tx.amount;
-                }
                 // Withdrawls
-                else if tx.sender == addr {
+                if tx.sender == addr {
                     balance -= tx.amount;
                 }
 
@@ -160,11 +158,25 @@ impl Glimmer {
 
     /// Verify whether a sender has enough to create a tx
     pub fn verify_tx(&self, new_tx: &Tx) -> bool {
+
+        if !new_tx.verify_sig(){
+            return false
+        }
+
         let balance = self.get_bal(&new_tx.sender);
+
+        if new_tx.sender == "" {
+            return true;
+        }
+
+        if new_tx.recipient == "" {
+            return false;
+        }
 
         if new_tx.cost() > balance {
             return false;
         }
+
         true
     }
 
