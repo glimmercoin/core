@@ -1,42 +1,15 @@
 // External Dependencies
 use std::error::Error;
-use serde::{Serialize, Deserialize};
-use crypto_hash::{Algorithm, hex_digest};
+use num_bigint::BigUint;
+use num_traits::identities::One;
 
-use crate::util::*;
+use crate::error::MiningError;
 use crate::consts::*;
 use crate::tx::*;
+use crate::block::*;
+use crate::util::*;
 
 pub type Blockchain = Vec<Block>;
-
-/// Block in the Glimmer blockchain
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Block {
-    pub index: usize,
-    timestamp: u128,
-    pub txs: Vec<Tx>,
-    pub proof: u64,
-    pub prev_hash: String
-}
-
-impl Block {
-    /// Creates a new block
-    pub fn new(index: usize, txs: Vec<Tx>, proof: u64, prev_hash: String) -> Result<Self, Box<dyn Error>> {
-        Ok(Block {
-            index,
-            timestamp: time()?,
-            txs,
-            proof,
-            prev_hash
-        })
-    }
-
-    pub fn hash(&self) -> Result<String, Box<dyn Error>> {
-        let j = serde_json::to_string(&self)?;
-        let digest = hex_digest(Algorithm::SHA256, j.as_bytes());
-        Ok(digest)
-    }
-}
 
 /// Glimmer blockchain
 /// This contains the blockchain logic 
@@ -45,49 +18,61 @@ pub struct Glimmer {
     current_txs: Vec<Tx>
 }
 
+impl std::fmt::Display for Glimmer {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        for block in &self.chain {
+            writeln!(f,"Block: {}", pretty_hash(&block.hash().to_vec()));
+            writeln!(f,"Nonce: {}", block.nonce);
+            writeln!(f,"Parent: {}", pretty_hash(&block.prev_hash.to_vec()));
+            writeln!(f,"Txs: {}", block.txs.len());
+            for tx in &block.txs {
+                writeln!(f, "{}", tx);
+            }
+            write!(f,"");
+        }
+        write!(f,"")
+    }
+
+}
+
+
 impl Glimmer {
     /// Create a new instance of the Glimmer blockchain
     pub fn new() -> Result<Self, Box<dyn Error>> {
-        let mut genesis = Glimmer {
-            chain: Vec::new(),
+        Ok(Glimmer {
+            chain: vec![Block::genesis()],
             current_txs: Vec::new()
-        };
-
-        // Add genesis block
-        genesis.add_block(100, Some("1".to_string()))?;
-
-        Ok(genesis)
+        })
     }
 
     /// Add a block to the blockchain 
-    pub fn add_block(&mut self, proof: u64, prev_hash: Option<String>) -> Result<Option<&Block>, Box<dyn Error>>{
-        // Get the hash of the last block
-        let hash = match prev_hash {
-            Some(hash) => hash,
-            None => self.chain.last().unwrap().hash()?
-        };
+    pub fn add_block(&mut self) -> Result<(), MiningError>{
+        let block: Block;
+        {
+            // let txs = if self.current_txs.
 
-        let block = Block::new(
-            self.chain.len() + 1,
-            self.current_txs.clone(),
-            proof,
-            hash 
-        )?;
-
-        self.current_txs = Vec::new();
+            match self.chain.last() {
+                Some(prev) => {
+                    block = Block::new(&mut self.current_txs, prev.hash())?;
+                    // self.current_txs = vec![Tx::new(RESERVE_WALLET, MINER_WALLET, REWARD,0.0)];
+                }
+                // Adding a block to an empty blockchain is an error, a genesis block needs to be
+                // created first.
+                None => {
+                    return Err(MiningError::NoParent)
+                }
+            }
+        }
 
         self.chain.push(block);
 
-        Ok(self.last_block())
+        Ok(())
     }
 
 
     pub fn add_tx(&mut self, tx: Tx) -> usize {
         self.current_txs.push(tx);
-        match self.last_block() {
-            Some(block) => block.index + 1,
-            None => 0
-        }
+        self.chain.len() + 1
     }
 
     /// Returns the last block of the chain
@@ -96,44 +81,106 @@ impl Glimmer {
     }
 
 
-    /// Basic POW algo
-    /// TODO: Make this more optimized
-    pub fn pow(last_proof: u64) -> u64 {
-        let mut proof = 0;
+    /// Verify if a block is valid
+    pub fn verify_block(block: &Block, nonce: u64) -> bool {
+        let target = get_target();
 
-        while !Glimmer::verify_proof(last_proof, proof) {
-            proof += 1;
+        let hash = Block::calculate_hash(&block.encode(), nonce);
+        let hash_int = BigUint::from_bytes_be(&hash);
+
+        if hash_int <= target {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    /// Verify if a glimmer blockchain is valid
+    pub fn verify_chain(glim: &Glimmer) -> bool {
+        let chain = &glim.chain;
+        let mut tmp_last_block = chain.get(0).unwrap();
+        let mut cur_idx = 1; 
+
+        // Iterate over all blocks in the chain
+        while cur_idx < chain.len() {
+            let block = &chain[cur_idx];
+
+            // Verify that the prev_hash of the current 
+            // block equals the hash of the last block
+            if block.prev_hash != tmp_last_block.hash() {
+                return false;
+            }
+            
+            // Verify txs
+            for tx in &block.txs {
+                if !glim.verify_tx(tx) {
+                    return false
+                };
+            }
+
+            // Verify the POW nonces are valid
+            if !Glimmer::verify_block(block, block.nonce) {
+                return false;
+            }
+
+
+            tmp_last_block = block;
+            cur_idx += 1
         }
 
-        proof
+        true
+
     }
 
+    /// Returns the balance of a provide address
+    pub fn get_bal(&self, addr: &str) -> f64 {
+        // Sender balance
+        let mut balance: f64 = 0.0;
 
-    /// Verify if a proof is valid
-    pub fn verify_proof(last_proof: u64, proof: u64) -> bool {
-        let guess = serde_json::to_string(&(format!("{}{}", last_proof, proof))).unwrap();
-        let digest = hex_digest(Algorithm::SHA256, guess.as_bytes());
-        let guess_sub = &digest[0..POW_DIFFICULTLY];
-        let valid = guess_sub == POW_GOAL;
-        if DEBUG {
-            println!("Valid: {}, {} == {}...", valid, digest, repeat_char('0', POW_DIFFICULTLY));
+        // Find balance of tx
+        for block in &self.chain {
+            for tx in &block.txs {
+                if tx.sender == "" && tx.recipient != "" {
+                    balance += tx.amount;
+                }
+                // Withdrawls
+                else if tx.sender == addr {
+                    balance -= tx.amount;
+                }
+
+                // Deposits
+                if tx.recipient == addr {
+                    balance += tx.amount;
+                }
+            }
         }
-        valid
+        balance
     }
 
+    /// Verify whether a sender has enough to create a tx
+    pub fn verify_tx(&self, new_tx: &Tx) -> bool {
+        let balance = self.get_bal(&new_tx.sender);
 
-    pub fn mine(&mut self, wallet: &String) -> &Block {
-        let last_block= self.last_block().unwrap();
-        let prev_hash = last_block.hash().unwrap();
-
-        let proof = Glimmer::pow(last_block.proof);
-
-        self.add_tx(Tx::new(String::from("0"), wallet.to_string(), 1.0));
-
-        let block = self.add_block(proof, Some(prev_hash)).unwrap().unwrap();
-        &block
-
+        if new_tx.cost() > balance {
+            return false;
+        }
+        true
     }
+
+    // pub fn mine(&mut self, wallet: &String) -> &Block {
+    //     let last_block= self.last_block().unwrap();
+    //     let prev_hash = last_block.hash();
+
+    //     // TODO: Make sure we can fail mining
+    //     let nonce = pow(last_block.nonce).unwrap();
+
+    //     self.add_tx(Tx::new(String::from("0"), wallet.to_string(), 1.0));
+
+    //     let block = self.add_block(nonce, Some(prev_hash)).unwrap().unwrap();
+    //     &block
+
+    // }
 
 
 }
